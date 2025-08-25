@@ -24,6 +24,13 @@ find_package(
 add_library(rest_in_beast_server INTERFACE)
 add_library(rest_in_beast::server ALIAS rest_in_beast_server)
 
+set_target_properties(
+    rest_in_beast_server PROPERTIES
+    # OUTPUT_NAME не имеет смысла менять, так как нет бинаря\
+    # EXPORT_NAME указывается для экспорта с NAMESPACE
+        EXPORT_NAME server
+)
+
 target_sources(
     rest_in_beast_server
     PUBLIC
@@ -118,9 +125,23 @@ target_compile_features(
 endif()
 
 include(GNUInstallDirs)
+
+# install(
+#     TARGETS rest_in_beast_server
+#     EXPORT rest_in_beast_server
+#     # header-only
+#     FILE_SET HEADERS DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+# )
+
 install(
     TARGETS rest_in_beast_server
-    EXPORT rest_in_beast_server
-    # header-only
+    EXPORT ${PROJECT_NAME}-targets
+    DESTINATION ${CMAKE_INSTALL_LIBDIR}
     FILE_SET HEADERS DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+)
+
+install(
+    EXPORT ${PROJECT_NAME}-targets
+    DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME}
+    NAMESPACE rest_in_beast::
 )
