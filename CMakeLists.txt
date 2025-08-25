@@ -28,8 +28,7 @@ target_sources(
     rest_in_beast_server
     PUBLIC
     # Новая фича, которая позволяет отслеживать заголовочные файлы в IDE и не заморачиваться с include_directories и install
-    FILE_SET rest_in_beast_server_headers
-    TYPE HEADERS
+    FILE_SET HEADERS
     BASE_DIRS ${CMAKE_CURRENT_LIST_DIR}/include
     FILES
     ${CMAKE_CURRENT_LIST_DIR}/include/rest_in_beast/server.hpp
@@ -117,3 +116,11 @@ target_compile_features(
 )
 
 endif()
+
+include(GNUInstallDirs)
+install(
+    TARGETS rest_in_beast_server
+    EXPORT rest_in_beast_server
+    # header-only
+    FILE_SET HEADERS DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+)
