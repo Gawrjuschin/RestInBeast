@@ -9,6 +9,9 @@ project(
 
 option(REST_IN_BEAST_BUILD_TESTS "" ON)
 
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# Dependencies
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 find_package(
     OpenSSL 1.0.2 # beast requirements
     REQUIRED
@@ -21,6 +24,9 @@ find_package(
     REQUIRED
 )
 
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# Library
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 add_library(rest_in_beast_server INTERFACE)
 add_library(rest_in_beast::server ALIAS rest_in_beast_server)
 
@@ -57,6 +63,7 @@ target_link_libraries(
     OpenSSL::Crypto
 )
 
+# TODO: find sockets
 if(WIN32)
     target_link_libraries(
         rest_in_beast_server
@@ -65,10 +72,17 @@ if(WIN32)
     )
 endif()
 
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# Testing
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 if(PROJECT_IS_TOP_LEVEL AND REST_IN_BEAST_BUILD_TESTS)
     include(CTest)
     enable_testing()
 
+
+    # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    # sercer test
+    # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     add_executable(rest_in_beast_server_tests)
     add_test(NAME serverTests COMMAND $<TARGET_FILE:rest_in_beast_server_tests>)
     target_sources(
@@ -97,7 +111,8 @@ target_compile_features(
 )
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
+# template test
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 add_executable(rest_in_beast_template_test)
 add_test(NAME templateTest COMMAND $<TARGET_FILE:rest_in_beast_template_test>)
 
@@ -124,14 +139,10 @@ target_compile_features(
 
 endif()
 
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# Packaging
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 include(GNUInstallDirs)
-
-# install(
-#     TARGETS rest_in_beast_server
-#     EXPORT rest_in_beast_server
-#     # header-only
-#     FILE_SET HEADERS DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
-# )
 
 install(
     TARGETS rest_in_beast_server
@@ -143,5 +154,6 @@ install(
 install(
     EXPORT ${PROJECT_NAME}-targets
     DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME}
-    NAMESPACE rest_in_beast::
+    NAMESPACE ${PROJECT_NAME}::
+    FILE ${PROJECT_NAME}-config.cmake
 )

@@ -13,7 +13,7 @@ namespace util {
  */
 template <typename Base> struct SharedProxy : public Base {
   template <typename... Ts>
-  SharedProxy<Base>(Ts&&... args) : Base{std::forward<Ts>(args)...} {}
+  SharedProxy(Ts&&... args) : Base{std::forward<Ts>(args)...} {}
 };
 } // namespace util
 } // namespace rest_in_beast
