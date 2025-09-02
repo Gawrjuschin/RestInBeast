@@ -33,6 +33,7 @@ namespace detail {
 template <typename SessionFactory>
 class Server : public std::enable_shared_from_this<Server<SessionFactory>> {
   boost::asio::ip::tcp::acceptor acceptor_;
+  std::shared_ptr<Logger> logger_;
   SessionFactory session_factory_;
 
   /**
@@ -40,13 +41,15 @@ class Server : public std::enable_shared_from_this<Server<SessionFactory>> {
    * Use Server::start_server instead of creating any instance of Server
    * @param io_ctx
    * @param endpoint
+   * @param logger
    * @param SessionFactory may be constructed with universal initialization
    * with requests_handler adjusted bu customer
    */
   Server(boost::asio::io_context& io_ctx,
          const boost::asio::ip::tcp::endpoint& endpoint,
-         SessionFactory session_factory)
+         std::shared_ptr<Logger> logger, SessionFactory session_factory)
       : acceptor_{boost::asio::make_strand(io_ctx), endpoint},
+        logger_{std::move(logger)},
         session_factory_{std::move(session_factory)} {}
 
   friend struct util::SharedProxy<Server>;
@@ -67,20 +70,19 @@ public:
 
   ~Server() = default;
 
-  struct StartServerArgs {
-    boost::asio::io_context& io_ctx;
-    boost::asio::ip::tcp::endpoint endpoint;
-    SessionFactory session_factory;
-  };
-  static void start(StartServerArgs args) {
-    make_shared(args.io_ctx, args.endpoint, std::move(args.session_factory))
-        ->do_accept();
-  }
-
+  /**
+   * @brief start - starts server with specified session type
+   * @param io_ctx
+   * @param endpoint
+   * @param logger
+   * @param session_factory - custom object
+   */
   static void start(boost::asio::io_context& io_ctx,
                     const boost::asio::ip::tcp::endpoint& endpoint,
+                    std::shared_ptr<Logger> logger,
                     SessionFactory session_factory) {
-    make_shared(io_ctx, endpoint, std::move(session_factory))->do_accept();
+    make_shared(io_ctx, endpoint, std::move(logger), std::move(session_factory))
+        ->do_accept();
   }
 
 private:
@@ -92,7 +94,7 @@ private:
   void on_accept(boost::beast::error_code ec,
                  boost::asio::ip::tcp::socket peer) {
     if (ec) {
-      return session_factory_.logger->log("Server", "on_accept", ec);
+      return logger_->log("Server", "on_accept", ec);
     } else {
       session_factory_.start_session(std::move(peer));
     }

@@ -48,10 +48,8 @@ BOOST_AUTO_TEST_CASE(plain_to_plain) {
   test::ASIOThread server_worker{io_ctx};
   std::thread server_thread{server_worker.thread_body()};
 
-  rib::PlainServer::start(
-      {.io_ctx = io_ctx,
-       .endpoint = endpoint,
-       .session_factory = {.respondent = respondent, .logger = server_logger}});
+  rib::PlainServer::start(io_ctx, endpoint, server_logger,
+                          {.respondent = respondent, .logger = server_logger});
 
   const auto [requests, responses] = test::requests_test_data();
 
@@ -97,11 +95,10 @@ BOOST_AUTO_TEST_CASE(secure_to_secur) {
   test::ASIOThread server_worker{io_ctx};
   std::thread server_thread{server_worker.thread_body()};
 
-  rib::SecureServer::start({.io_ctx = io_ctx,
-                            .endpoint = endpoint,
-                            .session_factory = {.ssl_ctx = server_ssl_ctx,
-                                                .respondent = respondent,
-                                                .logger = server_logger}});
+  rib::SecureServer::start(io_ctx, endpoint, server_logger,
+                           {.ssl_ctx = server_ssl_ctx,
+                            .respondent = respondent,
+                            .logger = server_logger});
 
   const auto [requests, responses] = test::requests_test_data();
 
@@ -147,11 +144,10 @@ BOOST_AUTO_TEST_CASE(secure_to_secure_wrong_ca) {
   test::ASIOThread server_worker{io_ctx};
   std::thread server_thread{server_worker.thread_body()};
 
-  rib::SecureServer::start({.io_ctx = io_ctx,
-                            .endpoint = endpoint,
-                            .session_factory = {.ssl_ctx = server_ssl_ctx,
-                                                .respondent = respondent,
-                                                .logger = server_logger}});
+  rib::SecureServer::start(io_ctx, endpoint, server_logger,
+                           {.ssl_ctx = server_ssl_ctx,
+                            .respondent = respondent,
+                            .logger = server_logger});
 
   const auto [requests, responses] = test::requests_test_data();
 
@@ -197,11 +193,10 @@ BOOST_AUTO_TEST_CASE(plain_to_flex) {
   test::ASIOThread server_worker{io_ctx};
   std::thread server_thread{server_worker.thread_body()};
 
-  rib::FlexServer::start({.io_ctx = io_ctx,
-                          .endpoint = endpoint,
-                          .session_factory = {.ssl_ctx = server_ssl_ctx,
-                                              .respondent = respondent,
-                                              .logger = server_logger}});
+  rib::FlexServer::start(io_ctx, endpoint, server_logger,
+                         {.ssl_ctx = server_ssl_ctx,
+                          .respondent = respondent,
+                          .logger = server_logger});
 
   const auto [requests, responses] = test::requests_test_data();
 
@@ -247,11 +242,10 @@ BOOST_AUTO_TEST_CASE(secure_to_flex) {
   test::ASIOThread server_worker{io_ctx};
   std::thread server_thread{server_worker.thread_body()};
 
-  rib::FlexServer::start({.io_ctx = io_ctx,
-                          .endpoint = endpoint,
-                          .session_factory = {.ssl_ctx = server_ssl_ctx,
-                                              .respondent = respondent,
-                                              .logger = server_logger}});
+  rib::FlexServer::start(io_ctx, endpoint, server_logger,
+                         {.ssl_ctx = server_ssl_ctx,
+                          .respondent = respondent,
+                          .logger = server_logger});
 
   const auto [requests, responses] = test::requests_test_data();
 
@@ -297,11 +291,10 @@ BOOST_AUTO_TEST_CASE(secure_to_flex_wrong_ca) {
   test::ASIOThread server_worker{io_ctx};
   std::thread server_thread{server_worker.thread_body()};
 
-  rib::FlexServer::start({.io_ctx = io_ctx,
-                          .endpoint = endpoint,
-                          .session_factory = {.ssl_ctx = server_ssl_ctx,
-                                              .respondent = respondent,
-                                              .logger = server_logger}});
+  rib::FlexServer::start(io_ctx, endpoint, server_logger,
+                         {.ssl_ctx = server_ssl_ctx,
+                          .respondent = respondent,
+                          .logger = server_logger});
 
   const auto [requests, responses] = test::requests_test_data();
 

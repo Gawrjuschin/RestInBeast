@@ -35,17 +35,20 @@ namespace detail {
 class PlainSession : public std::enable_shared_from_this<PlainSession> {
   boost::beast::tcp_stream stream_;
   boost::beast::flat_buffer buffer_;
-
   std::shared_ptr<Respondent> respondent_;
   std::shared_ptr<Logger> logger_;
+  std::chrono::milliseconds read_timeout_{};
+
   boost::beast::http::request<boost::beast::http::string_body> request_{};
 
   PlainSession(boost::asio::ip::tcp::socket&& peer,
                boost::beast::flat_buffer buffer,
                std::shared_ptr<Respondent> respondent,
-               std::shared_ptr<Logger> logger)
+               std::shared_ptr<Logger> logger,
+               std::chrono::milliseconds read_timeout)
       : stream_{std::move(peer)}, buffer_{std::move(buffer)},
-        respondent_{std::move(respondent)}, logger_{std::move(logger)} {}
+        respondent_{std::move(respondent)}, logger_{std::move(logger)},
+        read_timeout_{read_timeout} {}
 
   /**
    * @brief start_reading - strand dispatch
@@ -61,10 +64,11 @@ class PlainSession : public std::enable_shared_from_this<PlainSession> {
   friend util::SharedProxy<PlainSession>;
   static std::shared_ptr<PlainSession> make_shared(
       boost::asio::ip::tcp::socket&& peer, boost::beast::flat_buffer buffer,
-      std::shared_ptr<Respondent> respondent, std::shared_ptr<Logger> logger) {
+      std::shared_ptr<Respondent> respondent, std::shared_ptr<Logger> logger,
+      std::chrono::milliseconds read_timeout) {
     return std::make_shared<util::SharedProxy<PlainSession>>(
         std::move(peer), std::move(buffer), std::move(respondent),
-        std::move(logger));
+        std::move(logger), read_timeout);
   }
 
 public:
@@ -85,9 +89,10 @@ public:
   static void start(boost::asio::ip::tcp::socket&& peer,
                     boost::beast::flat_buffer buffer,
                     std::shared_ptr<Respondent> respondent,
-                    std::shared_ptr<Logger> logger) {
+                    std::shared_ptr<Logger> logger,
+                    std::chrono::milliseconds read_timeout) {
     return make_shared(std::move(peer), std::move(buffer),
-                       std::move(respondent), std::move(logger))
+                       std::move(respondent), std::move(logger), read_timeout)
         ->start_reading();
   }
 
@@ -105,9 +110,7 @@ private:
   }
 
   void do_read() {
-    // TODO: make_customizable
-    boost::beast::get_lowest_layer(stream_).expires_after(
-        std::chrono::seconds{30});
+    boost::beast::get_lowest_layer(stream_).expires_after(read_timeout_);
 
     boost::beast::http::async_read(
         stream_, buffer_, request_,
@@ -154,9 +157,11 @@ private:
 class SecureSession : public std::enable_shared_from_this<SecureSession> {
   boost::asio::ssl::stream<boost::beast::tcp_stream> stream_;
   boost::beast::flat_buffer buffer_;
-
   std::shared_ptr<Respondent> respondent_;
   std::shared_ptr<Logger> logger_;
+  std::chrono::milliseconds read_timeout_;
+  std::chrono::milliseconds handshake_timeout_;
+
   boost::beast::http::request<boost::beast::http::string_body> request_{};
 
   // Я вам запрещаю конструировать
@@ -164,18 +169,22 @@ class SecureSession : public std::enable_shared_from_this<SecureSession> {
                 boost::asio::ssl::context& ssl_ctx,
                 boost::beast::flat_buffer buffer,
                 std::shared_ptr<Respondent> respondent,
-                std::shared_ptr<Logger> logger)
+                std::shared_ptr<Logger> logger,
+                std::chrono::milliseconds read_timeout,
+                std::chrono::milliseconds handshake_timeout)
       : stream_{std::move(peer), ssl_ctx}, buffer_{std::move(buffer)},
-        respondent_{std::move(respondent)}, logger_{std::move(logger)} {}
+        respondent_{std::move(respondent)}, logger_{std::move(logger)},
+        read_timeout_{read_timeout}, handshake_timeout_{handshake_timeout} {}
 
   friend util::SharedProxy<SecureSession>;
   static std::shared_ptr<SecureSession> make_shared(
       boost::asio::ip::tcp::socket&& peer, boost::asio::ssl::context& ssl_ctx,
       boost::beast::flat_buffer buffer, std::shared_ptr<Respondent> respondent,
-      std::shared_ptr<Logger> logger) {
+      std::shared_ptr<Logger> logger, std::chrono::milliseconds read_timeout,
+      std::chrono::milliseconds handshake_timeout) {
     return std::make_shared<util::SharedProxy<SecureSession>>(
         std::move(peer), ssl_ctx, std::move(buffer), std::move(respondent),
-        std::move(logger));
+        std::move(logger), read_timeout, handshake_timeout);
   }
 
   /**
@@ -209,9 +218,12 @@ public:
                     boost::asio::ssl::context& ssl_ctx,
                     boost::beast::flat_buffer buffer,
                     std::shared_ptr<Respondent> respondent,
-                    std::shared_ptr<Logger> logger) {
+                    std::shared_ptr<Logger> logger,
+                    std::chrono::milliseconds read_timeout,
+                    std::chrono::milliseconds handshake_timeout) {
     return make_shared(std::move(peer), ssl_ctx, std::move(buffer),
-                       std::move(respondent), std::move(logger))
+                       std::move(respondent), std::move(logger), read_timeout,
+                       handshake_timeout)
         ->start_handshake();
   }
 
@@ -229,9 +241,7 @@ private:
   }
 
   void do_handshake() {
-    // TODO: make customisable
-    boost::beast::get_lowest_layer(stream_).expires_after(
-        std::chrono::seconds{30});
+    boost::beast::get_lowest_layer(stream_).expires_after(handshake_timeout_);
 
     stream_.async_handshake(
         boost::asio::ssl::stream_base::server, buffer_.data(),
@@ -252,9 +262,7 @@ private:
   }
 
   void do_read() {
-    // TODO: make_customizable
-    boost::beast::get_lowest_layer(stream_).expires_after(
-        std::chrono::seconds{30});
+    boost::beast::get_lowest_layer(stream_).expires_after(read_timeout_);
 
     boost::beast::http::async_read(
         stream_, buffer_, request_,
@@ -306,23 +314,30 @@ class DetectSSLSession : public std::enable_shared_from_this<DetectSSLSession> {
   boost::beast::tcp_stream stream_;
   boost::asio::ssl::context& ssl_ctx_;
   boost::beast::flat_buffer buffer_;
-
   std::shared_ptr<Respondent> respondent_;
   std::shared_ptr<Logger> logger_;
+  std::chrono::milliseconds read_timeout_;
+  std::chrono::milliseconds handshake_timeout_;
 
   DetectSSLSession(boost::asio::ip::tcp::socket&& peer,
                    boost::asio::ssl::context& ssl_ctx,
                    std::shared_ptr<Respondent> respondent,
-                   std::shared_ptr<Logger> logger)
+                   std::shared_ptr<Logger> logger,
+                   std::chrono::milliseconds read_timeout,
+                   std::chrono::milliseconds handshake_timeout)
       : stream_{std::move(peer)}, ssl_ctx_{ssl_ctx},
-        respondent_{std::move(respondent)}, logger_{std::move(logger)} {}
+        respondent_{std::move(respondent)}, logger_{std::move(logger)},
+        read_timeout_{read_timeout}, handshake_timeout_{handshake_timeout} {}
 
   friend util::SharedProxy<DetectSSLSession>;
   static std::shared_ptr<DetectSSLSession> make_shared(
       boost::asio::ip::tcp::socket&& peer, boost::asio::ssl::context& ssl_ctx,
-      std::shared_ptr<Respondent> respondent, std::shared_ptr<Logger> logger) {
+      std::shared_ptr<Respondent> respondent, std::shared_ptr<Logger> logger,
+      std::chrono::milliseconds read_timeout,
+      std::chrono::milliseconds handshake_timeout) {
     return std::make_shared<util::SharedProxy<DetectSSLSession>>(
-        std::move(peer), ssl_ctx, std::move(respondent), std::move(logger));
+        std::move(peer), ssl_ctx, std::move(respondent), std::move(logger),
+        read_timeout, handshake_timeout);
   }
 
   /**
@@ -347,9 +362,11 @@ public:
   static void start(boost::asio::ip::tcp::socket&& peer,
                     boost::asio::ssl::context& ssl_ctx,
                     std::shared_ptr<Respondent> respondent,
-                    std::shared_ptr<Logger> logger) {
+                    std::shared_ptr<Logger> logger,
+                    std::chrono::milliseconds read_timeout,
+                    std::chrono::milliseconds handshake_timeout) {
     return make_shared(std::move(peer), ssl_ctx, std::move(respondent),
-                       std::move(logger))
+                       std::move(logger), read_timeout, handshake_timeout)
         ->start_detection();
   };
 
@@ -360,18 +377,18 @@ private:
     }
 
     if (result) {
-      return detail::SecureSession::start(stream_.release_socket(), ssl_ctx_,
-                                          std::move(buffer_), respondent_,
-                                          logger_);
+      return detail::SecureSession::start(
+          stream_.release_socket(), ssl_ctx_, std::move(buffer_), respondent_,
+          logger_, read_timeout_, handshake_timeout_);
     }
 
-    return detail::PlainSession::start(
-        stream_.release_socket(), std::move(buffer_), respondent_, logger_);
+    return detail::PlainSession::start(stream_.release_socket(),
+                                       std::move(buffer_), respondent_, logger_,
+                                       read_timeout_);
   }
 
   void do_detect() {
-    boost::beast::get_lowest_layer(stream_).expires_after(
-        std::chrono::seconds{30});
+    boost::beast::get_lowest_layer(stream_).expires_after(read_timeout_);
 
     boost::beast::async_detect_ssl(
         stream_, buffer_,
@@ -386,10 +403,11 @@ private:
 struct PlainSessionFactory {
   std::shared_ptr<Respondent> respondent;
   std::shared_ptr<Logger> logger;
+  std::chrono::milliseconds read_timeout{30'000};
 
   void start_session(boost::asio::ip::tcp::socket&& peer) {
     return PlainSession::start(std::move(peer), boost::beast::flat_buffer{},
-                               respondent, logger);
+                               respondent, logger, read_timeout);
   }
 };
 
@@ -400,10 +418,12 @@ struct SecureSessionFactory {
   boost::asio::ssl::context& ssl_ctx;
   std::shared_ptr<Respondent> respondent;
   std::shared_ptr<Logger> logger;
+  std::chrono::milliseconds read_timeout{30'000};
+  std::chrono::milliseconds handshake_timeout{30'000};
 
   void start_session(boost::asio::ip::tcp::socket&& peer) {
     return SecureSession::start(std::move(peer), ssl_ctx, {}, respondent,
-                                logger);
+                                logger, read_timeout, handshake_timeout);
   }
 };
 
@@ -414,10 +434,12 @@ struct DetectSSLSessionFactory {
   boost::asio::ssl::context& ssl_ctx;
   std::shared_ptr<Respondent> respondent;
   std::shared_ptr<Logger> logger;
+  std::chrono::milliseconds read_timeout{30'000};
+  std::chrono::milliseconds handshake_timeout{30'000};
 
   void start_session(boost::asio::ip::tcp::socket&& peer) {
-    return DetectSSLSession::start(std::move(peer), ssl_ctx, respondent,
-                                   logger);
+    return DetectSSLSession::start(std::move(peer), ssl_ctx, respondent, logger,
+                                   read_timeout, handshake_timeout);
   }
 };
 
