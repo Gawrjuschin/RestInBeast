@@ -1,5 +1,12 @@
-#ifndef RESIN_IN_BEAST_RESPONDENT_H
-#define RESIN_IN_BEAST_RESPONDENT_H
+//
+// Author: Dmitriy Gavryushin (https://github.com/Gawrjuschin)
+//
+// Distributed under the Boost Software License, Version 1.0. (See accompanying
+// file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
+//
+
+#ifndef RESIN_IN_BEAST_RESPONDENT_HPP
+#define RESIN_IN_BEAST_RESPONDENT_HPP
 
 #include <boost/beast/http/message_fwd.hpp>
 #include <boost/beast/http/message_generator_fwd.hpp>
@@ -29,4 +36,4 @@ public:
 
 } // namespace rest_in_beast
 
-#endif // RESIN_IN_BEAST_RESPONDENT_H
+#endif // RESIN_IN_BEAST_RESPONDENT_HPP

@@ -1,5 +1,18 @@
-#ifndef RESIN_IN_BEAST_SERVER_H
-#define RESIN_IN_BEAST_SERVER_H
+//
+// Author: Dmitriy Gavryushin (https://github.com/Gawrjuschin)
+//
+// Based on Boost.Beast's HTTP server examples:
+//
+// https://github.com/boostorg/beast/blob/develop/example/advanced/server
+// https://github.com/boostorg/beast/blob/develop/example/advanced/server-flex
+// https://github.com/boostorg/beast/tree/develop/example/common
+//
+// Distributed under the Boost Software License, Version 1.0. (See accompanying
+// file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
+//
+
+#ifndef RESIN_IN_BEAST_SERVER_HPP
+#define RESIN_IN_BEAST_SERVER_HPP
 
 #include "rest_in_beast/detail/session.hpp"
 
@@ -56,9 +69,9 @@ class Server : public std::enable_shared_from_this<Server<SessionFactory>> {
   static std::shared_ptr<Server>
   make_shared(boost::asio::io_context& io_ctx,
               const boost::asio::ip::tcp::endpoint& endpoint,
-              SessionFactory session_factory) {
+              std::shared_ptr<Logger> logger, SessionFactory session_factory) {
     return std::make_shared<util::SharedProxy<Server>>(
-        io_ctx, endpoint, std::move(session_factory));
+        io_ctx, endpoint, std::move(logger), std::move(session_factory));
   }
 
 public:
@@ -125,4 +138,4 @@ using FlexServer = detail::Server<detail::DetectSSLSessionFactory>;
 
 } // namespace rest_in_beast
 
-#endif // RESIN_IN_BEAST_SERVER_H
+#endif // RESIN_IN_BEAST_SERVER_HPP

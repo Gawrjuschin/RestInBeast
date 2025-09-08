@@ -1,12 +1,12 @@
 # BeastHttpServer
 
-BeastHttpServer это итог моих экспериментов с библиотеками boost::asio и boost::beast.
+BeastHttpServer это итог моих экспериментов с библиотеками boost::asio и boost::beast. Основан на примерах из Boost.Beast (https://github.com/boostorg/beast/blob/develop/example).
 
 Реализован интерфейс сервера с тремя типами сессий (plain, secure и flex как в примерах).
 Задача кастомизации сервера решена в статике при помощи фабрики сессий.
 
 Генерация ответов на запросы вынесена в отдельный интерфейс Respondent (DI). 
-Логгирование через интерфейс Loogger (DI)
+Логгирование через интерфейс Loogger (DI).
 
 TODO: вариант со статическими интерфейсами респондента и логгера.
 
